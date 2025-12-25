@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Салон красоты "Гармония"</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/datepicker.min.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-spa"></i> Гармония
+            </a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html"><i class="fas fa-home"></i> Главная</a></li>
+                <li><a href="uslugi.html"><i class="fas fa-concierge-bell"></i> Услуги</a></li>
+                <li><a href="auth.html"><i class="fas fa-user"></i> Вход</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="text-center mb-3">
+                <h1 class="pink-text">Добро пожаловать в салон красоты "Гармония"</h1>
+                <a href="uslugi.html" class="btn">Посмотреть услуги</a>
+            </div>
+
+            <div class="card mb-3">
+                <h2 class="pink-text mb-1">Почему выбирают нас?</h2>
+                <div class="services-grid" id="featuresGrid">
+                    <div class="card">
+                        <i class="fas fa-star feature-icon"></i>
+                        <h3>Профессионалы</h3>
+                        <p>Наши мастера - дипломированные специалисты с многолетним опытом</p>
+                    </div>
+                    <div class="card">
+                        <i class="fas fa-gem feature-icon"></i>
+                        <h3>Качество</h3>
+                        <p>Используем только профессиональную косметику премиум-класса</p>
+                    </div>
+                    <div class="card">
+                        <i class="fas fa-heart feature-icon"></i>
+                        <h3>Забота</h3>
+                        <p>Индивидуальный подход к каждому клиенту</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="pink-text mb-1">Наши услуги</h2>
+                <div class="services-grid" id="servicesGrid">
+                    <div class="card">
+                        <p>Загрузка услуг...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Салон красоты "Гармония". Все права защищены.</p>
+            <p>Телефон: +7 (123)-456-78-90 Адрес: ул. Красный проспект 72</p>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-vk"></i></a>
+                <a href="#"><i class="fab fa-telegram"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Конфигурация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkntHcR8prtCSc5yW7fu3zsIOxu4Vl41o",
+            authDomain: "salon-69bf0.firebaseapp.com",
+            projectId: "salon-69bf0",
+            storageBucket: "salon-69bf0.firebasestorage.app",
+            messagingSenderId: "640329978062",
+            appId: "1:640329978062:web:f9f7647f2642fd3c6f809f",
+            measurementId: "G-X9VT54W2NQ"
+        };
+
+        // Инициализация Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Функция проверки авторизации
+        function checkAuth() {
+            return new Promise((resolve) => {
+                const unsubscribe = auth.onAuthStateChanged((user) => {
+                    unsubscribe();
+                    resolve(user);
+                });
+            });
+        }
+
+        // После загрузки страницы
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log("Страница загружена");
+            
+            //Проверяем авторизацию
+            try {
+                const user = await checkAuth();
+                console.log("Пользователь:", user);
+                updateNavigation(user);
+            } catch (error) {
+                console.error("Ошибка проверки авторизации:", error);
+            }
+            
+            // Загружаем данные из БД
+            loadServicesFromDB();
+        });
+        
+        function updateNavigation(user) {
+            const navLinks = document.getElementById('navLinks');
+            
+            if (user) {
+                // Если пользователь вошел
+                navLinks.innerHTML = `
+                    <li><a href="index.html" class="active"><i class="fas fa-home"></i> Главная</a></li>
+                    <li><a href="uslugi.html"><i class="fas fa-concierge-bell"></i> Услуги</a></li>
+                    <li><a href="lk.html"><i class="fas fa-user-circle"></i> Кабинет</a></li>
+                    <li><a href="admin.html"><i class="fas fa-cog"></i> Админ</a></li>
+                    <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Выйти</a></li>
+                `;
+            } else {
+                // Если пользователь не вошел
+                navLinks.innerHTML = `
+                    <li><a href="index.html" class="active"><i class="fas fa-home"></i> Главная</a></li>
+                    <li><a href="uslugi.html"><i class="fas fa-concierge-bell"></i> Услуги</a></li>
+                    <li><a href="auth.html"><i class="fas fa-user"></i> Вход</a></li>
+                `;
+            }
+        }
+        
+        async function logout() {
+            try {
+                await auth.signOut();
+                window.location.reload();
+            } catch (error) {
+                console.error("Ошибка выхода:", error);
+            }
+        }
+        
+        async function loadServicesFromDB() {
+            const servicesGrid = document.getElementById('servicesGrid');
+            
+            try {
+                console.log("Начинаю загрузку услуг...");
+                
+                const snapshot = await db.collection('services').where('isActive', '==', true).get();
+                console.log("Услуги загружены:", snapshot.size, "шт.");
+                
+                if (snapshot.empty) {
+                    servicesGrid.innerHTML = `
+                        <div class="card">
+                            <p>Услуг пока нет</p>
+                            <p>Добавьте услуги в админ-панели</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach(doc => {
+                    const service = doc.data();
+                    html += `
+                        <div class="card">
+                            <i class="fas ${getServiceIcon(service.category)} service-icon"></i>
+                            <h3>${service.name || 'Без названия'}</h3>
+                            <p>${service.description || ''}</p>
+                            <p><strong>${service.price || '0'} ₽</strong></p>
+                            <button class="btn btn-secondary" onclick="bookService('${service.name}')">Записаться</button>
+                        </div>
+                    `;
+                });
+                
+                servicesGrid.innerHTML = html;
+                
+            } catch (error) {
+                console.error("Ошибка загрузки услуг:", error);
+                servicesGrid.innerHTML = `
+                    <div class="card">
+                        <p>Не удалось загрузить услуги</p>
+                        <p>Ошибка: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function getServiceIcon(category) {
+            const icons = {
+                'hair': 'fa-cut',
+                'nails': 'fa-hand-sparkles',
+                'cosmetology': 'fa-spa',
+                'makeup': 'fa-paint-brush',
+                'massage': 'fa-hand-holding-heart',
+                'spa': 'fa-crown'
+            };
+            return icons[category] || 'fa-star';
+        }
+        
+        function bookService(serviceName) {
+            alert(`Запись на услугу: ${serviceName}\n\nПереход на страницу записи...`);
+            window.location.href = 'auth.html';
+        }
+    </script>
+</body>
+</html>

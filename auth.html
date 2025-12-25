@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход и регистрация</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/datepicker.min.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-spa"></i>Гармония
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html"><i class="fas fa-home"></i> Главная</a></li>
+                <li><a href="uslugi.html"><i class="fas fa-concierge-bell"></i> Услуги</a></li>
+                <li><a href="auth.html" class="active"><i class="fas fa-user"></i> Вход</a></li>
+                <li><a href="lk.html"><i class="fas fa-user-circle"></i> Кабинет</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div id="loginFormContainer" class="card">
+                <h2 class="pink-text text-center mb-2">Вход в личный кабинет</h2>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" class="form-control" placeholder="ваш@email.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Пароль:</label>
+                        <input type="password" id="password" class="form-control" placeholder="Введите пароль" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userType">Войти как:</label>
+                        <select id="userType" class="form-control">
+                            <option value="client">Клиент</option>
+                            <option value="master">Мастер</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn full-width-btn">Войти</button>
+                </form>
+                
+                <p class="text-center mt-2">
+                    <a href="#" class="pink-text" id="forgotPassword">Забыли пароль?</a>
+                </p>
+                
+                <div class="text-center mt-2">
+                    <p>Нет аккаунта? <a href="#" class="pink-text" id="showRegister">Зарегистрироваться</a></p>
+                </div>
+            </div>
+
+            <div id="registerForm" class="card">
+                <h2 class="pink-text text-center mb-2">Регистрация</h2>
+                
+                <form id="registrationForm">
+                    <div class="form-group">
+                        <label for="regName">Имя:</label>
+                        <input type="text" id="regName" class="form-control" placeholder="Ваше имя" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regPhone">Телефон:</label>
+                        <input type="tel" id="regPhone" class="form-control" placeholder="+7 (XXX) XXX-XX-XX" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regEmail">Email:</label>
+                        <input type="email" id="regEmail" class="form-control" placeholder="ваш@email.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regUserType">Регистрация как:</label>
+                        <select id="regUserType" class="form-control">
+                            <option value="client">Клиент</option>
+                            <option value="master">Мастер</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regPassword">Пароль:</label>
+                        <input type="password" id="regPassword" class="form-control" placeholder="Придумайте пароль (минимум 6 символов)" required minlength="6">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regPasswordConfirm">Подтвердите пароль:</label>
+                        <input type="password" id="regPasswordConfirm" class="form-control" placeholder="Повторите пароль" required>
+                    </div>
+                    
+                    <button type="submit" class="btn full-width-btn">Зарегистрироваться</button>
+                </form>
+                
+                <div class="text-center mt-2">
+                    <p>Уже есть аккаунт? <a href="#" class="pink-text" id="showLogin">Войти</a></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Салон красоты "Гармония". Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase конфигурация
+        const firebaseConfig = {
+         apiKey: "AIzaSyBkntHcR8prtCSc5yW7fu3zsIOxu4Vl41o",
+         authDomain: "salon-69bf0.firebaseapp.com",
+         projectId: "salon-69bf0",
+         storageBucket: "salon-69bf0.firebasestorage.app",
+         messagingSenderId: "640329978062",
+         appId: "1:640329978062:web:f9f7647f2642fd3c6f809f",
+         measurementId: "G-X9VT54W2NQ"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        document.getElementById('registerForm').style.display = 'none';
+        
+        // Переключение между формой входа и регистрации
+        document.getElementById('showRegister').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('loginFormContainer').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        });
+        
+        document.getElementById('showLogin').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginFormContainer').style.display = 'block';
+        });
+        
+        // Вход
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const userType = document.getElementById('userType').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                
+                    localStorage.setItem('userType', userType);
+                    
+                    alert('Вход выполнен успешно!');
+                    window.location.href = 'lk.html';
+                })
+                .catch((error) => {
+                    alert('Ошибка входа: ' + error.message);
+                });
+        });
+        
+        // Регистрация
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const phone = document.getElementById('regPhone').value;
+            const email = document.getElementById('regEmail').value;
+            const userType = document.getElementById('regUserType').value;
+            const password = document.getElementById('regPassword').value;
+            const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+            
+            if(password !== passwordConfirm) {
+                alert('Пароли не совпадают');
+                return;
+            }
+            
+            if(password.length < 6) {
+                alert('Пароль должен содержать минимум 6 символов');
+                return;
+            }
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    return db.collection('users').doc(user.uid).set({
+                        name: name,
+                        phone: phone,
+                        email: email,
+                        role: userType,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        isActive: true
+                    });
+                })
+                .then(() => {
+                    alert('Регистрация прошла успешно! Теперь вы можете войти.');
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.getElementById('loginFormContainer').style.display = 'block';
+                    document.getElementById('registrationForm').reset();
+                })
+                .catch((error) => {
+                    alert('Ошибка регистрации: ' + error.message);
+                });
+        });
+        
+        // Забыли пароль
+        document.getElementById('forgotPassword').addEventListener('click', function(e) {
+            e.preventDefault();
+            const email = prompt('Введите ваш email для восстановления пароля:');
+            if(email) {
+                auth.sendPasswordResetEmail(email)
+                    .then(() => {
+                        alert('Инструкция по восстановлению пароля отправлена на ' + email);
+                    })
+                    .catch((error) => {
+                        alert('Ошибка: ' + error.message);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>

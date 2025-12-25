@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Услуги</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/datepicker.min.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-spa"></i>Гармония
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html"><i class="fas fa-home"></i> Главная</a></li>
+                <li><a href="uslugi.html" class="active"><i class="fas fa-concierge-bell"></i> Услуги</a></li>
+                <li><a href="auth.html"><i class="fas fa-user"></i> Вход</a></li>
+                <li><a href="lk.html"><i class="fas fa-user-circle"></i> Кабинет</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <h1 class="pink-text text-center mb-3">Наши услуги</h1>
+            
+            <div class="services-grid" id="servicesGrid">
+                <div class="card">
+                    <p>Загрузка услуг...</p>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <h2 class="pink-text mb-1">Как записаться?</h2>
+                <ol class="booking-steps">
+                    <li>Выберите услугу и нажмите "Записаться"</li>
+                    <li>Если вы не авторизованы, система предложит войти или зарегистрироваться</li>
+                    <li>Выберите удобные дату и время</li>
+                    <li>Подтвердите запись</li>
+                </ol>
+                <div class="text-center mt-2">
+                    <a href="auth.html" class="btn">Войти для записи</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Салон красоты "Гармония". Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="firebase-config.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log("Страница услуг загружена");
+
+            // Загружаем данные из БД
+            loadServicesFromDB();
+        });
+
+        async function loadServicesFromDB() {
+            const servicesGrid = document.getElementById('servicesGrid');
+
+            try {
+                console.log("Начинаю загрузку услуг...");
+
+                // Проверяем, инициализирована ли БД
+                if (!firebase.db) {
+                    console.error("База данных не инициализирована");
+                    servicesGrid.innerHTML = `
+                        <div class="card">
+                            <p>Ошибка подключения к базе данных</p>
+                            <p>Проверьте настройки Firebase</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Пытаемся загрузить услуги
+                const snapshot = await firebase.db.collection('services').get();
+                console.log("Услуги загружены:", snapshot.size, "шт.");
+
+                if (snapshot.empty) {
+                    servicesGrid.innerHTML = `
+                        <div class="card">
+                            <p>Услуг пока нет</p>
+                            <p>Добавьте услуги в Firebase Console</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach(doc => {
+                    const service = doc.data();
+                    html += `
+                        <div class="card">
+                            <i class="fas ${getServiceIcon(service.category)} service-icon"></i>
+                            <h3>${service.name || 'Без названия'}</h3>
+                            <p>${service.description || ''}</p>
+                            <p><strong>${service.price || '0'} ₽</strong></p>
+                            <button class="btn btn-secondary book-btn" onclick="bookService('${service.name}')">Записаться</button>
+                        </div>
+                    `;
+                });
+
+                servicesGrid.innerHTML = html;
+
+            } catch (error) {
+                console.error("Ошибка загрузки услуг:", error);
+                servicesGrid.innerHTML = `
+                    <div class="card">
+                        <p>Не удалось загрузить услуги</p>
+                        <p>Ошибка: ${error.message}</p>
+                        <p>Проверьте правила доступа Firebase</p>
+                    </div>
+                `;
+            }
+        }
+
+        function getServiceIcon(category) {
+            const icons = {
+                'hair': 'fa-cut',
+                'nails': 'fa-hand-sparkles',
+                'cosmetology': 'fa-spa',
+                'makeup': 'fa-paint-brush',
+                'massage': 'fa-hand-holding-heart',
+                'spa': 'fa-crown'
+            };
+            return icons[category] || 'fa-star';
+        }
+
+        async function bookService(serviceName) {
+            try {
+                // Проверяем авторизацию
+                const user = await firebase.checkAuth();
+
+                if (user) {
+                    alert(`Запись на "${serviceName}" оформлена! Переход в личный кабинет...`);
+                    window.location.href = 'lk.html';
+                } else {
+                    alert('Для записи необходимо войти в систему');
+                    window.location.href = 'auth.html';
+                }
+            } catch (error) {
+                console.error("Ошибка проверки авторизации:", error);
+                alert('Для записи необходимо войти в систему');
+                window.location.href = 'auth.html';
+            }
+        }
+    </script>
+</body>
+</html>

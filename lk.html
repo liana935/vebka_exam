@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/datepicker.min.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-spa"></i>Гармония
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html"><i class="fas fa-home"></i> Главная</a></li>
+                <li><a href="uslugi.html"><i class="fas fa-concierge-bell"></i> Услуги</a></li>
+                <li><a href="auth.html"><i class="fas fa-user"></i> Вход</a></li>
+                <li><a href="lk.html" class="active"><i class="fas fa-user-circle"></i> Кабинет</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="profile-card card">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <h2>Загрузка...</h2>
+                        <p><i class="fas fa-envelope contact-icon"></i> Загрузка...</p>
+                        <p><i class="fas fa-phone contact-icon"></i> Загрузка...</p>
+                    </div>
+                </div>
+                
+
+                
+                <div class="text-center">
+                    <a href="uslugi.html" class="btn">Записаться на новую услугу</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Салон красоты "Гармония". Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log("Личный кабинет загружен");
+
+            try {
+                // Проверяем авторизацию
+                const user = await firebase.checkAuth();
+                console.log("Пользователь:", user);
+
+                if (user) {
+                    // Загружаем данные пользователя из БД
+                    const userData = await firebase.getUserData(user.uid);
+                    console.log("Данные пользователя:", userData);
+
+                    if (userData) {
+                        // Обновляем информацию о пользователе
+                        updateUserInfo(user, userData);
+                    } else {
+                        console.error("Данные пользователя не найдены");
+                        alert("Не удалось загрузить данные пользователя");
+                    }
+                } else {
+                    // Если пользователь не авторизован, перенаправляем на страницу входа
+                    alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
+                    window.location.href = 'auth.html';
+                }
+            } catch (error) {
+                console.error("Ошибка загрузки данных:", error);
+                alert("Произошла ошибка при загрузке данных пользователя");
+            }
+        });
+
+        function updateUserInfo(user, userData) {
+            // Обновляем имя пользователя
+            const userNameElement = document.querySelector('.user-details h2');
+            if (userNameElement) {
+                userNameElement.textContent = userData.name || user.displayName || user.email;
+            }
+
+            // Обновляем email
+            const emailElement = document.querySelector('.user-details p:first-of-type');
+            if (emailElement) {
+                emailElement.innerHTML = `<i class="fas fa-envelope contact-icon"></i> ${userData.email || user.email}`;
+            }
+
+            // Обновляем телефон
+            const phoneElement = document.querySelector('.user-details p:nth-of-type(2)');
+            if (phoneElement && userData.phone) {
+                phoneElement.innerHTML = `<i class="fas fa-phone contact-icon"></i> ${userData.phone}`;
+            }
+
+            console.log("Информация о пользователе обновлена");
+        }
+
+        async function loadUserAppointments(userId) {
+            const appointmentsContainer = document.getElementById('appointmentsContainer');
+
+            try {
+                console.log("Загружаем записи пользователя:", userId);
+
+                // Проверяем, инициализирована ли БД
+                if (!firebase.db) {
+                    console.error("База данных не инициализирована");
+                    appointmentsContainer.innerHTML = `
+                        <div class="card">
+                            <p>Ошибка подключения к базе данных</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Загружаем записи пользователя
+                const snapshot = await firebase.db.collection('appointments')
+                    .where('userId', '==', userId)
+                    .orderBy('date', 'desc')
+                    .get();
+
+                console.log("Записи загружены:", snapshot.size, "шт.");
+
+                if (snapshot.empty) {
+                    appointmentsContainer.innerHTML = `
+                        <div class="card">
+                            <p>У вас пока нет записей</p>
+                            <p>Запишитесь на услугу в разделе "Услуги"</p>
+                        </div>
+                    `;
+                    return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const appointment = doc.data();
+                    const statusText = getStatusText(appointment.status);
+                    const statusClass = getStatusClass(appointment.status);
+
+                    html += `
+                        <div class="card mb-1">
+                            <p><strong>${appointment.serviceName || 'Без названия'}</strong></p>
+                            <p><i class="far fa-calendar contact-icon"></i> ${formatDate(appointment.date)} ${appointment.time || ''}</p>
+                            <p><i class="fas fa-user contact-icon"></i> Мастер: ${appointment.masterName || 'Не назначен'}</p>
+                            <p><span class="pink-text">Статус:</span> <span class="${statusClass}">${statusText}</span></p>
+                            ${appointment.status === 'confirmed' ? `<button class="btn btn-secondary book-btn" onclick="cancelAppointment('${doc.id}')">Отменить запись</button>` : ''}
+                        </div>
+                    `;
+                });
+
+                appointmentsContainer.innerHTML = html;
+
+            } catch (error) {
+                console.error("Ошибка загрузки записей:", error);
+                appointmentsContainer.innerHTML = `
+                    <div class="card">
+                        <p>Не удалось загрузить записи</p>
+                        <p>Ошибка: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function getStatusText(status) {
+            const statuses = {
+                'pending': 'Ожидание подтверждения',
+                'confirmed': 'Подтверждено',
+                'cancelled': 'Отменено',
+                'completed': 'Завершено'
+            };
+            return statuses[status] || 'Неизвестный статус';
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'pending': 'text-yellow-600',
+                'confirmed': 'text-green-600',
+                'cancelled': 'text-red-600',
+                'completed': 'text-blue-600'
+            };
+            return classes[status] || 'text-gray-600';
+        }
+
+        function formatDate(date) {
+            if (!date) return 'Дата не указана';
+            const d = new Date(date.seconds ? date.seconds * 1000 : date);
+            return d.toLocaleDateString('ru-RU');
+        }
+
+        async function cancelAppointment(appointmentId) {
+            if (!confirm('Вы уверены, что хотите отменить запись?')) {
+                return;
+            }
+
+            try {
+                await firebase.db.collection('appointments').doc(appointmentId).update({
+                    status: 'cancelled',
+                    cancelledAt: new Date()
+                });
+
+                alert('Запись отменена');
+                location.reload();
+
+            } catch (error) {
+                console.error("Ошибка отмены записи:", error);
+                alert('Не удалось отменить запись. Попробуйте еще раз.');
+            }
+        }
+
+        // Отмена записи
+        document.getElementById('cancelAppointment1').addEventListener('click', function() {
+            if(confirm('Вы уверены, что хотите отменить запись на стрижку?')) {
+                alert('Запись отменена');
+                this.parentElement.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
